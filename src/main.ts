@@ -1,0 +1,44 @@
+import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import { ValidationPipe } from '@nestjs/common';
+import { join } from 'path';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { AppModule } from './app.module';
+import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import { TransformInterceptor } from './common/interceptors/transform.interceptor';
+
+async function bootstrap() {
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  // Serve static files
+  app.useStaticAssets(join(__dirname, '..', 'public'));
+
+  // Set global prefix
+  app.setGlobalPrefix('api');
+
+  // Swagger setup
+  const config = new DocumentBuilder()
+    .setTitle('NestJS Boilerplate API')
+    .setDescription('The core API documentation for the NestJS Boilerplate project')
+    .setVersion('1.0')
+    .addBearerAuth()
+    .build();
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('docs', app, document);
+
+  // Global pipes
+  app.useGlobalPipes(new ValidationPipe({
+    whitelist: true,
+    forbidNonWhitelisted: true,
+    transform: true,
+  }));
+
+  // Global filters
+  app.useGlobalFilters(new HttpExceptionFilter());
+
+  // Global interceptors
+  app.useGlobalInterceptors(new TransformInterceptor());
+
+  await app.listen(process.env.PORT ?? 3000);
+}
+bootstrap();
