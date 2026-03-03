@@ -14,7 +14,7 @@ async function bootstrap() {
   app.useStaticAssets(join(__dirname, '..', 'public'));
 
   // Set global prefix
-  app.setGlobalPrefix('api');
+  app.setGlobalPrefix('api', { exclude: ['/'] });
 
   // Swagger setup
   const config = new DocumentBuilder()
