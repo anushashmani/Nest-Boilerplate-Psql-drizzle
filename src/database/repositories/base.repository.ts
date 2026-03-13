@@ -1,8 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { DRIZZLE } from '../../shared/database/database.module';
-import * as schema from '../schema';
-import { eq, sql, type SQL, desc, asc, ilike, or, and } from 'drizzle-orm';
+import { eq, sql, type SQL, ilike, or, and } from 'drizzle-orm';
 import { PgTable, PgColumn } from 'drizzle-orm/pg-core';
 
 @Injectable()
@@ -40,6 +39,24 @@ export abstract class BaseRepository<
       .insert(this.table)
       .values(data as any)
       .returning() as any)) as unknown as TSelect[];
+  }
+
+  /**
+   * Upsert a record (Insert or Update on conflict)
+   * @param data The data to insert/update
+   * @param target The conflict target (column or columns)
+   * @returns The upserted record
+   */
+  async upsert(data: TInsert, target: PgColumn | PgColumn[]): Promise<TSelect> {
+    const [result] = await (this.db
+      .insert(this.table)
+      .values(data as any)
+      .onConflictDoUpdate({
+        target: target as any,
+        set: data as any,
+      })
+      .returning() as any);
+    return result as TSelect;
   }
 
   /**
@@ -145,6 +162,38 @@ export abstract class BaseRepository<
       .where(eq((this.table as any).id, id))
       .returning() as any);
     return (result as TSelect) || null;
+  }
+
+  /**
+   * Update multiple records based on a condition
+   * @param where The SQL condition
+   * @param data The partial data to update
+   * @returns Array of updated records
+   */
+  async updateMany(where: SQL, data: Partial<TInsert>): Promise<TSelect[]> {
+    const updateData = { ...data };
+    
+    if ('updatedAt' in (this.table as any) && !('updatedAt' in (data as any))) {
+      (updateData as any).updatedAt = new Date();
+    }
+
+    return (await (this.db
+      .update(this.table)
+      .set(updateData as any)
+      .where(where)
+      .returning() as any)) as unknown as TSelect[];
+  }
+
+  /**
+   * Delete multiple records based on a condition
+   * @param where The SQL condition
+   * @returns Array of deleted records
+   */
+  async deleteMany(where: SQL): Promise<TSelect[]> {
+    return (await (this.db
+      .delete(this.table)
+      .where(where)
+      .returning() as any)) as unknown as TSelect[];
   }
 
   /**
