@@ -76,10 +76,15 @@ The data gatekeeper.
 - **Logic:** Uses `class-validator` to check every request body. It strips out properties that aren't defined in your DTOs (security) and transforms types (e.g., string to number).
 - **Benefit:** Guarantees that only "clean" and valid data reaches your services.
 
-#### `src/common/decorators/current-user.decorator.ts`
-**Custom Param Decorator.**
-- **Logic:** Extracts the `user` object from the Request (populated by Passport) and makes it available as a function parameter.
-- **Benefit:** Simplifies controllers. Instead of `request.user`, you simply use `@CurrentUser() user: User`.
+#### `src/common/guards/roles.guard.ts`
+**Authorization Guard.**
+- **Logic:** Works alongside the `Roles` decorator. It retrieves the required roles from the route's metadata and checks if the authenticated user (attached to the request) possesses at least one of those roles.
+- **Benefit:** Provides granular access control. For example, you can restrict sensitive admin routes using `@Roles('admin')`.
+
+#### `src/modules/auth/guards/jwt-auth.guard.ts`
+**Authentication Guard.**
+- **Logic:** Uses the Passport JWT strategy to verify the bearer token in the `Authorization` header. If valid, it allows the request and attaches the user profile to `request.user`.
+- **Benefit:** Secures routes from unauthenticated access.
 
 ---
 

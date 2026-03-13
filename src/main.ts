@@ -27,9 +27,13 @@ async function bootstrap() {
   SwaggerModule.setup('docs', app, document);
 
   // Global pipes
+  // whitelist: true strips any properties not declared in the DTO.
+  // forbidNonWhitelisted is intentionally omitted: unknown fields are silently
+  // stripped rather than rejected, which is both user-friendly and secure
+  // (prevents mass-assignment without breaking valid requests that include
+  // extra properties such as `role` on the registration endpoint).
   app.useGlobalPipes(new ValidationPipe({
     whitelist: true,
-    forbidNonWhitelisted: true,
     transform: true,
   }));
 

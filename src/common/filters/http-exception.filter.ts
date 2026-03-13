@@ -33,9 +33,9 @@ export class HttpExceptionFilter implements ExceptionFilter {
     // Standardized error format
     response.status(status).json({
       // status: 'error',
-      status: status,
-      // timestamp: new Date().toISOString(),
-      // path: request.url,
+      status: status || 'error',
+      timestamp: new Date().toISOString(),
+      path: request.url,
       message: Array.isArray(message) ? message[0] : message,
     });
   }
