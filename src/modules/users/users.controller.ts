@@ -1,4 +1,4 @@
-import { Controller, Get, Body, Patch, Param, Delete, UseGuards, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Body, Patch, Param, Delete, UseGuards, ParseIntPipe, Query } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -15,11 +15,27 @@ export class UsersController {
 
   @Get()
   @Roles('admin')
-  @ApiOperation({ summary: 'Get all users (Admin only)' })
-  @ApiResponse({ status: 200, description: 'Return all users' })
+  @ApiOperation({ summary: 'Get users with pagination (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Return paginated users' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  findAll() {
-    return this.usersService.findAll();
+  findAll(
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 10,
+  ) {
+    return this.usersService.findAllPaginated(+page, +limit);
+  }
+
+  @Get('search')
+  @Roles('admin')
+  @ApiOperation({ summary: 'Search users (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Return matching users' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  search(
+    @Query('q') query: string,
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 10,
+  ) {
+    return this.usersService.search(query, +page, +limit);
   }
 
   @Get(':id')
