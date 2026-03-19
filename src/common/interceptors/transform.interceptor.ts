@@ -24,7 +24,7 @@ export class TransformInterceptor<T>
     return next.handle().pipe(
       map((data) => ({
         status: 'success',
-        data: data ?? null,
+        ...(data ?? {}),
         message: 'Request processed successfully',
       })),
     );
