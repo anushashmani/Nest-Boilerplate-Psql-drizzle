@@ -37,21 +37,39 @@ export class UsersService {
   }
 
   async findAll() {
-    return this.usersRepository.findAll();
+    const users = await this.usersRepository.findAll();
+    return users.map((user) => {
+      const { password, ...result } = user as any;
+      return result;
+    });
   }
 
   async findAllPaginated(page: number, limit: number) {
-    return this.usersRepository.findPaginated({ page, limit });
+    const result = await this.usersRepository.findPaginated({ page, limit });
+    return {
+      ...result,
+      data: result.data.map((user) => {
+        const { password, ...userWithoutPassword } = user as any;
+        return userWithoutPassword;
+      }),
+    };
   }
 
   async search(query: string, page: number, limit: number) {
     // const { users } = require('../../../database/schema');
-    return this.usersRepository.searchPaginated({
+    const result = await this.usersRepository.searchPaginated({
       query,
       columns: [users.name, users.email],
       page,
       limit,
     });
+    return {
+      ...result,
+      data: result.data.map((user) => {
+        const { password, ...userWithoutPassword } = user as any;
+        return userWithoutPassword;
+      }),
+    };
   }
 
   async update(id: number, updateUserDto: UpdateUserDto) {
@@ -65,6 +83,11 @@ export class UsersService {
   }
 
   async remove(id: number) {
-    return this.usersRepository.delete(id);
+    const user = await this.usersRepository.delete(id);
+    if (user) {
+      const { password, ...result } = user as any;
+      return result;
+    }
+    return null;
   }
 }
