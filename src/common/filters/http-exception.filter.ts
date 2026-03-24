@@ -20,7 +20,10 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const request = ctx.getRequest<Request>();
 
     // Handle 404s for non-API routes with the monkey image
-    if (exception instanceof NotFoundException && !request.url.startsWith('/api')) {
+    if (
+      exception instanceof NotFoundException &&
+      !request.url.startsWith('/api')
+    ) {
       return response.sendFile(join(process.cwd(), 'public/assets/monkey.jpg'));
     }
 
@@ -48,7 +51,8 @@ export class HttpExceptionFilter implements ExceptionFilter {
       timestamp: new Date().toISOString(),
       path: request.url,
       message: messageResponse, // Keep the full array for validation errors rather than just message[0]
-      ...(status === HttpStatus.INTERNAL_SERVER_ERROR && process.env.NODE_ENV !== 'production'
+      ...(status === HttpStatus.INTERNAL_SERVER_ERROR &&
+      process.env.NODE_ENV !== 'production'
         ? { stack: exception.stack } // Provide stack trace in dev
         : {}),
     };

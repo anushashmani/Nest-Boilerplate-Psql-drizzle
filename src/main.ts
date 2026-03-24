@@ -24,7 +24,9 @@ async function bootstrap() {
   // Swagger setup
   const config = new DocumentBuilder()
     .setTitle('NestJS Boilerplate API')
-    .setDescription('The core API documentation for the NestJS Boilerplate project')
+    .setDescription(
+      'The core API documentation for the NestJS Boilerplate project',
+    )
     .setVersion('1.0')
     .addBearerAuth()
     .build();
@@ -37,10 +39,12 @@ async function bootstrap() {
   // stripped rather than rejected, which is both user-friendly and secure
   // (prevents mass-assignment without breaking valid requests that include
   // extra properties such as `role` on the registration endpoint).
-  app.useGlobalPipes(new ValidationPipe({
-    whitelist: true,
-    transform: true,
-  }));
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      transform: true,
+    }),
+  );
 
   // Global filters
   app.useGlobalFilters(new HttpExceptionFilter());

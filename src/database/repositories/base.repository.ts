@@ -57,7 +57,11 @@ export abstract class BaseRepository<
    * @param tx Optional transaction object
    * @returns The upserted record
    */
-  async upsert(data: TInsert, target: PgColumn | PgColumn[], tx?: any): Promise<TSelect> {
+  async upsert(
+    data: TInsert,
+    target: PgColumn | PgColumn[],
+    tx?: any,
+  ): Promise<TSelect> {
     const [result] = await (this.cx(tx)
       .insert(this.table)
       .values(data as any)
@@ -75,7 +79,9 @@ export abstract class BaseRepository<
    * @returns Array of all records
    */
   async findAll(tx?: any): Promise<TSelect[]> {
-    return (await this.cx(tx).select().from(this.table as any)) as unknown as TSelect[];
+    return (await this.cx(tx)
+      .select()
+      .from(this.table as any)) as unknown as TSelect[];
   }
 
   /**
@@ -84,20 +90,27 @@ export abstract class BaseRepository<
    * @param tx Optional transaction object
    * @returns Array of matching records
    */
-  async findMany(params?: {
-    where?: SQL;
-    orderBy?: SQL | PgColumn | (SQL | PgColumn)[];
-    limit?: number;
-    offset?: number;
-  }, tx?: any): Promise<TSelect[]> {
-    const query = this.cx(tx).select().from(this.table as any);
+  async findMany(
+    params?: {
+      where?: SQL;
+      orderBy?: SQL | PgColumn | (SQL | PgColumn)[];
+      limit?: number;
+      offset?: number;
+    },
+    tx?: any,
+  ): Promise<TSelect[]> {
+    const query = this.cx(tx)
+      .select()
+      .from(this.table as any);
 
     if (params?.where) {
       query.where(params.where);
     }
 
     if (params?.orderBy) {
-      const orderByArr = Array.isArray(params.orderBy) ? params.orderBy : [params.orderBy];
+      const orderByArr = Array.isArray(params.orderBy)
+        ? params.orderBy
+        : [params.orderBy];
       query.orderBy(...(orderByArr as any));
     }
 
@@ -149,9 +162,13 @@ export abstract class BaseRepository<
    * @param tx Optional transaction object
    * @returns The updated record or null if not found
    */
-  async update(id: number | string, data: Partial<TInsert>, tx?: any): Promise<TSelect | null> {
+  async update(
+    id: number | string,
+    data: Partial<TInsert>,
+    tx?: any,
+  ): Promise<TSelect | null> {
     const updateData = { ...data };
-    
+
     // Convention: Auto-handle updatedAt if it exists in the schema
     if ('updatedAt' in (this.table as any) && !('updatedAt' in (data as any))) {
       (updateData as any).updatedAt = new Date();
@@ -162,7 +179,7 @@ export abstract class BaseRepository<
       .set(updateData as any)
       .where(eq((this.table as any).id, id))
       .returning() as any);
-    
+
     return (result as TSelect) || null;
   }
 
@@ -187,9 +204,13 @@ export abstract class BaseRepository<
    * @param tx Optional transaction object
    * @returns Array of updated records
    */
-  async updateMany(where: SQL, data: Partial<TInsert>, tx?: any): Promise<TSelect[]> {
+  async updateMany(
+    where: SQL,
+    data: Partial<TInsert>,
+    tx?: any,
+  ): Promise<TSelect[]> {
     const updateData = { ...data };
-    
+
     if ('updatedAt' in (this.table as any) && !('updatedAt' in (data as any))) {
       (updateData as any).updatedAt = new Date();
     }
@@ -220,12 +241,14 @@ export abstract class BaseRepository<
    * @returns The count as a number
    */
   async count(where?: SQL): Promise<number> {
-    const query = this.db.select({ count: sql<number>`cast(count(*) as integer)` }).from(this.table as any);
-    
+    const query = this.db
+      .select({ count: sql<number>`cast(count(*) as integer)` })
+      .from(this.table as any);
+
     if (where) {
       query.where(where);
     }
-    
+
     const [result] = await (query as any);
     return result.count;
   }
@@ -240,7 +263,13 @@ export abstract class BaseRepository<
     limit: number;
     where?: SQL;
     orderBy?: SQL | PgColumn | (SQL | PgColumn)[];
-  }): Promise<{ data: TSelect[]; total: number; page: number; limit: number; totalPages: number }> {
+  }): Promise<{
+    data: TSelect[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
     const { page, limit, where, orderBy } = params;
     const offset = (page - 1) * limit;
 
@@ -277,8 +306,8 @@ export abstract class BaseRepository<
     offset?: number;
   }): Promise<TSelect[]> {
     const { query, columns, where, orderBy, limit, offset } = params;
-    
-    const searchConditions = columns.map(col => ilike(col, `%${query}%`));
+
+    const searchConditions = columns.map((col) => ilike(col, `%${query}%`));
     const searchWhere = or(...searchConditions);
     const finalWhere = where ? and(where, searchWhere!) : searchWhere;
 
@@ -302,10 +331,16 @@ export abstract class BaseRepository<
     limit: number;
     where?: SQL;
     orderBy?: SQL | PgColumn | (SQL | PgColumn)[];
-  }): Promise<{ data: TSelect[]; total: number; page: number; limit: number; totalPages: number }> {
+  }): Promise<{
+    data: TSelect[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  }> {
     const { query, columns, page, limit, where, orderBy } = params;
-    
-    const searchConditions = columns.map(col => ilike(col, `%${query}%`));
+
+    const searchConditions = columns.map((col) => ilike(col, `%${query}%`));
     const searchWhere = or(...searchConditions);
     const finalWhere = where ? and(where, searchWhere!) : searchWhere;
 
