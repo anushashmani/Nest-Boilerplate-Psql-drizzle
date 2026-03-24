@@ -17,12 +17,20 @@ export abstract class BaseRepository<
   ) {}
 
   /**
+   * Helper to return either the provided transaction or the pool
+   */
+  protected get cx() {
+    return (tx?: any) => tx || this.db;
+  }
+
+  /**
    * Create a new record
    * @param data The data to insert
+   * @param tx Optional transaction object
    * @returns The created record
    */
-  async create(data: TInsert): Promise<TSelect> {
-    const [result] = await (this.db
+  async create(data: TInsert, tx?: any): Promise<TSelect> {
+    const [result] = await (this.cx(tx)
       .insert(this.table)
       .values(data as any)
       .returning() as any);
@@ -32,10 +40,11 @@ export abstract class BaseRepository<
   /**
    * Create multiple records
    * @param data Array of records to insert
+   * @param tx Optional transaction object
    * @returns Array of created records
    */
-  async createMany(data: TInsert[]): Promise<TSelect[]> {
-    return (await (this.db
+  async createMany(data: TInsert[], tx?: any): Promise<TSelect[]> {
+    return (await (this.cx(tx)
       .insert(this.table)
       .values(data as any)
       .returning() as any)) as unknown as TSelect[];
@@ -45,10 +54,11 @@ export abstract class BaseRepository<
    * Upsert a record (Insert or Update on conflict)
    * @param data The data to insert/update
    * @param target The conflict target (column or columns)
+   * @param tx Optional transaction object
    * @returns The upserted record
    */
-  async upsert(data: TInsert, target: PgColumn | PgColumn[]): Promise<TSelect> {
-    const [result] = await (this.db
+  async upsert(data: TInsert, target: PgColumn | PgColumn[], tx?: any): Promise<TSelect> {
+    const [result] = await (this.cx(tx)
       .insert(this.table)
       .values(data as any)
       .onConflictDoUpdate({
@@ -61,15 +71,17 @@ export abstract class BaseRepository<
 
   /**
    * Find all records for this table
+   * @param tx Optional transaction object
    * @returns Array of all records
    */
-  async findAll(): Promise<TSelect[]> {
-    return (await this.db.select().from(this.table as any)) as unknown as TSelect[];
+  async findAll(tx?: any): Promise<TSelect[]> {
+    return (await this.cx(tx).select().from(this.table as any)) as unknown as TSelect[];
   }
 
   /**
    * Find many records with optional filters, sorting, and pagination
    * @param params Query parameters
+   * @param tx Optional transaction object
    * @returns Array of matching records
    */
   async findMany(params?: {
@@ -77,8 +89,8 @@ export abstract class BaseRepository<
     orderBy?: SQL | PgColumn | (SQL | PgColumn)[];
     limit?: number;
     offset?: number;
-  }): Promise<TSelect[]> {
-    const query = this.db.select().from(this.table as any);
+  }, tx?: any): Promise<TSelect[]> {
+    const query = this.cx(tx).select().from(this.table as any);
 
     if (params?.where) {
       query.where(params.where);
@@ -103,10 +115,11 @@ export abstract class BaseRepository<
   /**
    * Find a single record based on a condition
    * @param where The SQL condition to filter by
+   * @param tx Optional transaction object
    * @returns The record or null if not found
    */
-  async findOne(where: SQL): Promise<TSelect | null> {
-    const [result] = await (this.db
+  async findOne(where: SQL, tx?: any): Promise<TSelect | null> {
+    const [result] = await (this.cx(tx)
       .select()
       .from(this.table as any)
       .where(where)
@@ -117,10 +130,11 @@ export abstract class BaseRepository<
   /**
    * Find a record by its ID
    * @param id The ID value (assumes the table has an 'id' column)
+   * @param tx Optional transaction object
    * @returns The record or null if not found
    */
-  async findById(id: number | string): Promise<TSelect | null> {
-    const [result] = await (this.db
+  async findById(id: number | string, tx?: any): Promise<TSelect | null> {
+    const [result] = await (this.cx(tx)
       .select()
       .from(this.table as any)
       .where(eq((this.table as any).id, id))
@@ -132,9 +146,10 @@ export abstract class BaseRepository<
    * Update a record by its ID
    * @param id The ID of the record to update
    * @param data The partial data to update
+   * @param tx Optional transaction object
    * @returns The updated record or null if not found
    */
-  async update(id: number | string, data: Partial<TInsert>): Promise<TSelect | null> {
+  async update(id: number | string, data: Partial<TInsert>, tx?: any): Promise<TSelect | null> {
     const updateData = { ...data };
     
     // Convention: Auto-handle updatedAt if it exists in the schema
@@ -142,7 +157,7 @@ export abstract class BaseRepository<
       (updateData as any).updatedAt = new Date();
     }
 
-    const [result] = await (this.db
+    const [result] = await (this.cx(tx)
       .update(this.table)
       .set(updateData as any)
       .where(eq((this.table as any).id, id))
@@ -154,10 +169,11 @@ export abstract class BaseRepository<
   /**
    * Delete a record by its ID
    * @param id The ID of the record to delete
+   * @param tx Optional transaction object
    * @returns The deleted record or null if not found
    */
-  async delete(id: number | string): Promise<TSelect | null> {
-    const [result] = await (this.db
+  async delete(id: number | string, tx?: any): Promise<TSelect | null> {
+    const [result] = await (this.cx(tx)
       .delete(this.table)
       .where(eq((this.table as any).id, id))
       .returning() as any);
@@ -168,16 +184,17 @@ export abstract class BaseRepository<
    * Update multiple records based on a condition
    * @param where The SQL condition
    * @param data The partial data to update
+   * @param tx Optional transaction object
    * @returns Array of updated records
    */
-  async updateMany(where: SQL, data: Partial<TInsert>): Promise<TSelect[]> {
+  async updateMany(where: SQL, data: Partial<TInsert>, tx?: any): Promise<TSelect[]> {
     const updateData = { ...data };
     
     if ('updatedAt' in (this.table as any) && !('updatedAt' in (data as any))) {
       (updateData as any).updatedAt = new Date();
     }
 
-    return (await (this.db
+    return (await (this.cx(tx)
       .update(this.table)
       .set(updateData as any)
       .where(where)
@@ -187,10 +204,11 @@ export abstract class BaseRepository<
   /**
    * Delete multiple records based on a condition
    * @param where The SQL condition
+   * @param tx Optional transaction object
    * @returns Array of deleted records
    */
-  async deleteMany(where: SQL): Promise<TSelect[]> {
-    return (await (this.db
+  async deleteMany(where: SQL, tx?: any): Promise<TSelect[]> {
+    return (await (this.cx(tx)
       .delete(this.table)
       .where(where)
       .returning() as any)) as unknown as TSelect[];

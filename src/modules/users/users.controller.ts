@@ -1,10 +1,28 @@
-import { Controller, Get, Body, Patch, Param, Delete, UseGuards, ParseIntPipe, Query } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import {
+  Controller,
+  Get,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  UseGuards,
+  ParseIntPipe,
+  Query,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+} from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { PaginationQueryDto } from '../../common/dto/pagination-query.dto';
+import { PaginatedResponseDto } from '../../common/dto/paginated-response.dto';
+import { User } from './entities/user.entity';
 
 @ApiTags('users')
 @ApiBearerAuth()
@@ -16,26 +34,30 @@ export class UsersController {
   @Get()
   @Roles('admin')
   @ApiOperation({ summary: 'Get users with pagination (Admin only)' })
-  @ApiResponse({ status: 200, description: 'Return paginated users' })
+  @ApiResponse({
+    status: 200,
+    description: 'Return paginated users',
+    type: PaginatedResponseDto<User>,
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  findAll(
-    @Query('page') page: number = 1,
-    @Query('limit') limit: number = 10,
-  ) {
-    return this.usersService.findAllPaginated(+page, +limit);
+  findAll(@Query() query: PaginationQueryDto) {
+    return this.usersService.findAllPaginated(
+      query.page || 1,
+      query.limit || 10,
+    );
   }
 
   @Get('search')
   @Roles('admin')
   @ApiOperation({ summary: 'Search users (Admin only)' })
-  @ApiResponse({ status: 200, description: 'Return matching users' })
+  @ApiResponse({
+    status: 200,
+    description: 'Return matching users',
+    type: PaginatedResponseDto<User>,
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  search(
-    @Query('q') query: string,
-    @Query('page') page: number = 1,
-    @Query('limit') limit: number = 10,
-  ) {
-    return this.usersService.search(query, +page, +limit);
+  search(@Query('q') q: string, @Query() query: PaginationQueryDto) {
+    return this.usersService.search(q, query.page || 1, query.limit || 10);
   }
 
   @Get(':id')
@@ -49,7 +71,10 @@ export class UsersController {
   @Patch(':id')
   @ApiOperation({ summary: 'Update user data' })
   @ApiResponse({ status: 200, description: 'User updated successfully' })
-  update(@Param('id', ParseIntPipe) id: number, @Body() updateUserDto: UpdateUserDto) {
+  update(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateUserDto: UpdateUserDto,
+  ) {
     return this.usersService.update(id, updateUserDto);
   }
 
