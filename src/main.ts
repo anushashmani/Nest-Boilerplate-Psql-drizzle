@@ -15,6 +15,12 @@ async function bootstrap() {
   // Use cookie parser
   app.use(cookieParser());
 
+  // Enable CORS
+  app.enableCors({
+    origin: true,
+    credentials: true,
+  });
+
   // Serve static files
   app.useStaticAssets(join(__dirname, '..', 'public'));
 

@@ -73,6 +73,15 @@ export class UsersService {
   }
 
   async update(id: number, updateUserDto: UpdateUserDto) {
+    if (updateUserDto.email) {
+      const existingUser = await this.usersRepository.findByEmail(
+        updateUserDto.email,
+      );
+      if (existingUser && existingUser.id !== id) {
+        throw new ConflictException('User with this email already exists');
+      }
+    }
+
     const user = await this.usersRepository.update(id, updateUserDto);
 
     if (user) {
